@@ -200,7 +200,7 @@ function renderDashboard() {
       <ol class="dashboard-module-list">
         ${course.map(mod => {
           const percent = progressFor(mod);
-          return `<li class="dashboard-module" role="button" tabindex="0" data-action="module" data-module="${mod.id}">
+          return `<li><button class="dashboard-module" type="button" data-action="module" data-module="${mod.id}">
             <span class="dash-number">${mod.no}</span>
             <span class="dash-title">
               <strong>${esc(mod.title)}</strong>
@@ -209,7 +209,7 @@ function renderDashboard() {
             <span class="dash-outcome">${esc(mod.outcome)}</span>
             <span class="dash-progress">${percent}%<i><span style="--progress-value:${percent / 100}"></span></i></span>
             <span class="dash-arrow">↗</span>
-          </li>`;
+          </button></li>`;
         }).join('')}
       </ol>
     </section>
@@ -248,7 +248,9 @@ function renderDashboard() {
 // TUGAS KELOMPOK VIEW (100% EMOJI-FREE)
 // -----------------------------------------------------------------------------
 function renderTugas() {
-  const currentTab = state.tugasTab;
+  const currentTab = ['overview', 'coffeeshop', 'marketplace', 'transport', 'matrix', 'rubric'].includes(state.tugasTab)
+    ? state.tugasTab
+    : 'overview';
   const activeCase = tugasData.cases.find(c => c.id === currentTab) || tugasData.cases[0];
 
   app.innerHTML = `
@@ -294,7 +296,7 @@ function renderTugas() {
 function renderTugasTabContent(tab, activeCase) {
   if (tab === 'overview') {
     return `
-      <section class="tugas-section">
+      <section class="tugas-section" id="tugas-framework">
         <div class="tugas-section-title">
           <span>Kerangka Kerja Terpadu (The 5-Step Value Chain)</span>
           <span style="font-size:11px; color:var(--subtle); font-family:var(--font-mono);">TRANSFORMASI DATA KE NILAI</span>
@@ -1150,7 +1152,7 @@ function renderM6() {
             const t = tables[k];
             const isSel = state.ui.erdEntity === k;
             return `
-              <div class="erd-card ${isSel ? 'active' : ''}" data-action="erd-select" data-value="${k}">
+              <div class="erd-card ${isSel ? 'active' : ''}" role="button" tabindex="0" aria-pressed="${isSel}" data-action="erd-select" data-value="${k}">
                 <div class="erd-head">
                   <span>${esc(t.name)}</span>
                   <span class="mono-label">${isSel ? 'TERPILIH' : 'TABEL'}</span>
@@ -1421,7 +1423,7 @@ function openDashboard() {
   window.scrollTo({ top: 0, behavior: scrollBehavior() });
 }
 
-function openTugas(tab = 'overview') {
+function openTugas(tab = 'overview', targetId = null) {
   state.page = 'tugas';
   state.tugasTab = tab;
   state.active = null;
@@ -1429,7 +1431,14 @@ function openTugas(tab = 'overview') {
   setBreadcrumb();
   renderTugas();
   closeSidebar();
-  window.scrollTo({ top: 0, behavior: scrollBehavior() });
+  if (targetId) {
+    requestAnimationFrame(() => {
+      const target = document.getElementById(targetId);
+      if (target) target.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+    });
+  } else {
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
+  }
 }
 
 function openGuide() {
@@ -1492,7 +1501,7 @@ document.addEventListener('click', e => {
   const action = btn.dataset.action;
 
   if (action === 'dashboard') { openDashboard(); return; }
-  if (action === 'tugas') { openTugas('overview'); return; }
+  if (action === 'tugas') { openTugas('overview', btn.dataset.target || null); return; }
   if (action === 'tugas-tab') {
     state.tugasTab = btn.dataset.value;
     renderTugas();
@@ -1608,7 +1617,9 @@ document.addEventListener('click', e => {
     const modId = btn.dataset.module;
     hideSearch();
     if (modId === 'tugas') {
-      openTugas(btn.dataset.target || 'overview');
+      const target = btn.dataset.target || '';
+      const taskTabs = ['overview', 'coffeeshop', 'marketplace', 'transport', 'matrix', 'rubric'];
+      openTugas(taskTabs.includes(target) ? target : 'overview', target === 'tugas-framework' ? target : null);
     } else {
       openModule(modId, btn.dataset.section || null, btn.dataset.target || null);
     }
@@ -1620,6 +1631,11 @@ document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
     showSearch();
+    return;
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-action]')) {
+    e.preventDefault();
+    e.target.click();
     return;
   }
   if (e.key === 'Escape') {

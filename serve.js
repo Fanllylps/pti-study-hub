@@ -1,11 +1,12 @@
 // Script peladen lokal sederhana untuk Ruang Belajar PTI
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 const PORT = process.env.PORT || 3000;
-const ROOT = __dirname;
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
